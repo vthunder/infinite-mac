@@ -145,6 +145,7 @@ export interface EmulatorDelegate {
         progress: number
     ): void;
     emulatorDidDrawScreen?(emulator: Emulator, data: ImageData): void;
+    emulatorDidSetClipboardText?(emulator: Emulator, text: string): void;
 }
 
 export type EmulatorFallbackCommandSender = (
@@ -981,6 +982,7 @@ export class Emulator {
                     console.error("Could not set clipboard text:", error);
                 }
             );
+            this.#delegate?.emulatorDidSetClipboardText?.(this, text);
         } else if (e.data.type === "emulator_did_run_out_memory") {
             this.#delegate?.emulatorDidRunOutOfMemory?.(this);
         } else if (e.data.type === "emulator_did_have_error") {

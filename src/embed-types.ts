@@ -56,4 +56,9 @@ export type EmbedNotificationEvent =
           data: Uint8ClampedArray;
           width: number;
           height: number;
+      }
+    | {
+          /** Forwarded from the Mac clipboard to the embedding page via postMessage. */
+          type: "emulator_set_clipboard_text";
+          text: string;
       };

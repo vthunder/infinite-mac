@@ -374,6 +374,12 @@ export default function Mac({
                         });
                     }
                 },
+                emulatorDidSetClipboardText(emulator, text) {
+                    sendEmbedNotification({
+                        type: "emulator_set_clipboard_text",
+                        text,
+                    });
+                },
             }
         );
         emulatorRef.current = emulator;
