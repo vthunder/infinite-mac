@@ -171,7 +171,13 @@ export function runDefFromUrl(urlString: string): RunDef | undefined {
 
     let ethernetProvider;
     const appleTalkZoneName = searchParams.get("appleTalk");
-    if (appleTalkZoneName) {
+    const ethernetWsOverride = searchParams.get("ethernet_ws");
+    if (ethernetWsOverride) {
+        ethernetProvider = new CloudflareWorkerEthernetProvider(
+            "dev",
+            ethernetWsOverride
+        );
+    } else if (appleTalkZoneName) {
         ethernetProvider = new CloudflareWorkerEthernetProvider(
             appleTalkZoneName
         );
@@ -308,7 +314,12 @@ export function runDefToUrl(runDef: RunDef, toEmbed: boolean = false): string {
         url.searchParams.set("screen_scale", runDef.screenScale.toString());
     }
     if (ethernetProvider instanceof CloudflareWorkerEthernetProvider) {
-        url.searchParams.set("appleTalk", ethernetProvider.zoneName());
+        const wsOverride = ethernetProvider.wsUrlOverride();
+        if (wsOverride) {
+            url.searchParams.set("ethernet_ws", wsOverride);
+        } else {
+            url.searchParams.set("appleTalk", ethernetProvider.zoneName());
+        }
     } else if (ethernetProvider instanceof BroadcastChannelEthernetProvider) {
         url.searchParams.set("broadcast_channel_ethernet", "true");
     }

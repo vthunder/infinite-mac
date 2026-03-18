@@ -12,6 +12,7 @@ export class CloudflareWorkerEthernetProvider
     implements EmulatorEthernetProvider
 {
     #zoneName: string;
+    #wsUrlOverride?: string;
     #macAddress?: string;
     #webSocket: WebSocket;
     #delegate?: EmulatorEthernetProviderDelegate;
@@ -19,9 +20,14 @@ export class CloudflareWorkerEthernetProvider
     #bufferedMessages: string[] = [];
     #reconnectTimeout?: number;
 
-    constructor(zoneName: string) {
+    constructor(zoneName: string, wsUrlOverride?: string) {
         this.#zoneName = zoneName;
+        this.#wsUrlOverride = wsUrlOverride;
         this.#webSocket = this.#connect();
+    }
+
+    wsUrlOverride(): string | undefined {
+        return this.#wsUrlOverride;
     }
 
     description(): string {
@@ -39,9 +45,10 @@ export class CloudflareWorkerEthernetProvider
     #connect(): WebSocket {
         const protocol = location.protocol === "https:" ? "wss:" : "ws:";
         const origin = `${protocol}//${location.host}`;
-        const webSocket = new WebSocket(
-            `${origin}/zone/${this.#zoneName}/websocket`
-        );
+        const url =
+            this.#wsUrlOverride ??
+            `${origin}/zone/${this.#zoneName}/websocket`;
+        const webSocket = new WebSocket(url);
         webSocket.addEventListener("open", this.#handleOpen);
         webSocket.addEventListener("close", this.#handleClose);
         webSocket.addEventListener("error", this.#handleError);
