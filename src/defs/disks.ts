@@ -1946,6 +1946,18 @@ const OPENSTEP_4_2: SystemDiskDef = {
     generatedSpec: () => import("@/Data/OPENSTEP 4.2 HD.dsk.json"),
 };
 
+export const SANDMILL_HD: SystemDiskDef = {
+    displayName: "Sandmill HD",
+    description:
+        "Navigation disk for sandmill.org. Contains AppleScript applets that set the clipboard to NAV: commands, intercepted by the embedding page.",
+    releaseDate: [2026, 3, 18],
+    prefetchChunks: [0, 1],
+    preferredMachine: QUADRA_650,
+    appearance: "Platinum",
+    hiddenInBrowser: true,
+    generatedSpec: () => import("@/Data/Sandmill HD.dsk.json"),
+};
+
 export const ALL_DISKS = [
     SYSTEM_1_0,
     SYSTEM_1_1,
@@ -2096,18 +2108,6 @@ ALL_DISKS.forEach(disk => {
         MAC_OS_X_DISKS_BY_YEAR[year].push(disk);
     }
 });
-
-export const SANDMILL_HD: SystemDiskDef = {
-    displayName: "Sandmill HD",
-    description:
-        "Navigation disk for sandmill.org. Contains AppleScript applets that set the clipboard to NAV: commands, intercepted by the embedding page.",
-    releaseDate: [2026, 3, 18],
-    prefetchChunks: [0, 1],
-    preferredMachine: QUADRA_650,
-    appearance: "Platinum",
-    hiddenInBrowser: true,
-    generatedSpec: () => import("@/Data/Sandmill HD.dsk.json"),
-};
 
 export const INFINITE_HD: EmulatorDiskDef = {
     prefetchChunks: [0, 3692, 3696, 3697, 3698],
