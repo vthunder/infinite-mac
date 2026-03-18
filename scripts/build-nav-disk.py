@@ -141,11 +141,11 @@ def build_resource_fork(resources_dict):
             data_off = res_data_offsets[key]
             attrs = item.get('attrs', 0)
             attr_and_data = ((attrs & 0xFF) << 24) | (data_off & 0x00FFFFFF)
-            ref_entries.append(struct.pack('>hH4sI',
+            ref_entries.append(struct.pack('>hHI4s',
                 item['id'],
                 0xFFFF,  # name offset = no name
-                b'\x00\x00\x00\x00',  # handle placeholder
                 attr_and_data,
+                b'\x00\x00\x00\x00',  # handle placeholder (reserved)
             ))
         current_ref_offset += num_items * ref_entry_size
 
