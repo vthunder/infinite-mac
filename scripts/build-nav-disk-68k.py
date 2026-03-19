@@ -34,8 +34,10 @@ OUT_DISK = "/tmp/sandmill-hd.dsk"
 TEMPLATE_BIN = "/tmp/applets/extract/StopFileSharing.bin"
 APPLETS_DIR = "/tmp/sandmill-applets-68k"
 
-# Entry point offset in CODE 1 (from CODE 0 jump table of StopFileSharing)
-CODE1_ENTRY_OFFSET = 164
+# Entry point offset in CODE 1.
+# CODE 0 has JTsize=0 (no jump table entries), so Mac OS starts executing at
+# offset 0 of CODE 1. Put the code right at the start.
+CODE1_ENTRY_OFFSET = 0
 
 
 # ─── Resource fork helpers (same as build-nav-disk.py) ───────────────────────
@@ -206,11 +208,10 @@ def build_code1(nav_string: str) -> bytes:
     Build a CODE 1 resource that sets the Mac clipboard to nav_string and exits.
 
     Layout:
-      [0..163]  : 164 bytes of padding (entry point from CODE 0 JT is at offset 164)
-      [164..]   : actual 68k code + nav string data
+      [0..]     : actual 68k code + nav string data (CODE 0 has no jump table,
+                  Mac OS starts executing at offset 0 of CODE 1)
 
     Machine code (hand-assembled 68k):
-      A9 FC                    ZeroScrap()
       3F 3C 00 00              MOVE.W #0, -(SP)      ; result space for PutScrap
       2F 3C 00 00 00 LL        MOVE.L #len, -(SP)    ; length
       2F 3C 54 45 58 54        MOVE.L #'TEXT', -(SP) ; type
@@ -224,9 +225,12 @@ def build_code1(nav_string: str) -> bytes:
     nav_len = len(nav_bytes)
 
     # Build the code bytes
+    # Note: PutScrap returns LongInt (4 bytes), so we must push 4 bytes of result
+    # space with MOVE.L, not MOVE.W. Using MOVE.W (2 bytes) causes the trap to
+    # write 4 bytes into a 2-byte slot, smashing the original stack and freezing
+    # Mac OS. ZeroScrap is not needed — PutScrap overwrites the scrap directly.
     code = bytes([
-        0xA9, 0xFC,              # ZeroScrap
-        0x3F, 0x3C, 0x00, 0x00, # MOVE.W #0, -(SP)  (result space)
+        0x2F, 0x3C, 0x00, 0x00, 0x00, 0x00, # MOVE.L #0, -(SP)  (4-byte result space for PutScrap)
     ])
     code += struct.pack('>2sI', b'\x2F\x3C', nav_len)  # MOVE.L #len, -(SP)
     code += bytes([0x2F, 0x3C, 0x54, 0x45, 0x58, 0x54])  # MOVE.L #'TEXT', -(SP)
