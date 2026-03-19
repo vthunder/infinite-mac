@@ -272,7 +272,7 @@ def compile_applescript(script_text):
 
 def build_applet(name, nav_target, template_resources):
     """Build a Classic Mac OS applet from template CODE resources + new scpt."""
-    script = f'set the clipboard to "{nav_target}"'
+    script = f'tell application "Finder"\nset the clipboard to "{nav_target}"\nend tell'
     print(f"  Compiling: {script!r}")
     bytecode = compile_applescript(script)
 
