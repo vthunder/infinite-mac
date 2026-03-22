@@ -28,6 +28,7 @@
         {
             "binding": "DISK_BUCKET",
             "bucket_name": "sandmill-mac-disk",
+            "preview_bucket_name": "sandmill-mac-disk",
         },
     ],
     "durable_objects": {

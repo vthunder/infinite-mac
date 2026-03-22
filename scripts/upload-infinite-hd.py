@@ -73,7 +73,7 @@ def main():
                     continue
 
                 result = subprocess.run(
-                    ["wrangler", "r2", "object", "put", r2_key, "--file", chunk_file],
+                    ["wrangler", "r2", "object", "put", r2_key, "--file", chunk_file, "--remote"],
                     capture_output=True,
                     text=True,
                     cwd=WRANGLER_CWD,

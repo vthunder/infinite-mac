@@ -558,6 +558,10 @@ class EmulatorWorkerApi {
         ) {
             return 0;
         }
+        if (length >= 14) {
+            const etherType = (packet[12] << 8) | packet[13];
+            postMessage({type: "emulator_ethernet_read", etherType: '0x' + etherType.toString(16), len: length});
+        }
         return length;
     }
 

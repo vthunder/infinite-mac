@@ -35,9 +35,10 @@ TEMPLATE_BIN = "/tmp/applets/extract/StopFileSharing.bin"
 APPLETS_DIR = "/tmp/sandmill-applets-68k"
 
 # Entry point offset in CODE 1.
-# CODE 0 has JTsize=0 (no jump table entries), so Mac OS starts executing at
-# offset 0 of CODE 1. Put the code right at the start.
-CODE1_ENTRY_OFFSET = 0
+# CODE 0's jump table entry: offset=0xA4 (164) in CODE 1, segment 1.
+# Verified from template binary: bytes 16-23 = 00 A4 3F 3C 00 01 A9 F0
+# (MOVE.W #1,-(SP); _LoadSeg). Entry point MUST be at offset 164.
+CODE1_ENTRY_OFFSET = 164
 
 
 # ─── Resource fork helpers (same as build-nav-disk.py) ───────────────────────
@@ -208,8 +209,8 @@ def build_code1(nav_string: str) -> bytes:
     Build a CODE 1 resource that sets the Mac clipboard to nav_string and exits.
 
     Layout:
-      [0..]     : actual 68k code + nav string data (CODE 0 has no jump table,
-                  Mac OS starts executing at offset 0 of CODE 1)
+      [0..163]  : 164 bytes of zeros (padding to reach CODE 0's JT entry point)
+      [164..]   : actual 68k code + nav string data
 
     Machine code (hand-assembled 68k):
       3F 3C 00 00              MOVE.W #0, -(SP)      ; result space for PutScrap
@@ -264,7 +265,7 @@ def build_applet(name, nav_target, template_resources):
             continue
         new_resources[rtype] = [dict(item) for item in items]
 
-    # Keep CODE 0 from template (has the jump table pointing to offset 164)
+    # Keep CODE 0 from template (JT entry at offset 164 in CODE 1 — verified)
     for item in template_resources.get('CODE', []):
         if item['id'] == 0:
             new_resources.setdefault('CODE', []).append(dict(item))

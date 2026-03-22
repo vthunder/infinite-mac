@@ -964,12 +964,51 @@ export class Emulator {
             }
         } else if (e.data.type === "emulator_ethernet_write") {
             const {destination, packet} = e.data;
+            const etherTypeNum = packet[12] !== undefined ? (packet[12] << 8 | packet[13]) >>> 0 : -1;
+            const etherType = etherTypeNum >= 0 ? "0x" + etherTypeNum.toString(16) : "unknown";
+            let packetDetail: Record<string, unknown> = {destination, etherType, packetLength: packet.length};
+            if (etherTypeNum === 0x0806 && packet.length >= 42) {
+                // ARP
+                const op = (packet[20] << 8 | packet[21]);
+                const senderIP = `${packet[28]}.${packet[29]}.${packet[30]}.${packet[31]}`;
+                const targetIP = `${packet[38]}.${packet[39]}.${packet[40]}.${packet[41]}`;
+                packetDetail.arp = {op: op === 1 ? "request" : op === 2 ? "reply" : op, senderIP, targetIP};
+            } else if (etherTypeNum === 0x0800 && packet.length >= 34) {
+                // IPv4
+                const proto = packet[23];
+                const srcIP = `${packet[26]}.${packet[27]}.${packet[28]}.${packet[29]}`;
+                const dstIP = `${packet[30]}.${packet[31]}.${packet[32]}.${packet[33]}`;
+                const protoName = proto === 6 ? "TCP" : proto === 17 ? "UDP" : proto === 1 ? "ICMP" : proto;
+                packetDetail.ipv4 = {proto: protoName, srcIP, dstIP};
+                if (proto === 6 && packet.length >= 54) {
+                    const srcPort = (packet[34] << 8 | packet[35]);
+                    const dstPort = (packet[36] << 8 | packet[37]);
+                    const flags = packet[47];
+                    const flagStr = [
+                        flags & 0x02 ? "SYN" : "",
+                        flags & 0x10 ? "ACK" : "",
+                        flags & 0x01 ? "FIN" : "",
+                        flags & 0x04 ? "RST" : "",
+                        flags & 0x08 ? "PSH" : "",
+                    ].filter(Boolean).join("|") || "none";
+                    packetDetail.tcp = {srcPort, dstPort, flags: flagStr};
+                } else if (proto === 17 && packet.length >= 42) {
+                    packetDetail.udp = {srcPort: (packet[34] << 8 | packet[35]), dstPort: (packet[36] << 8 | packet[37])};
+                }
+            }
             const localResponse = handleEthernetWrite(destination, packet);
             if (localResponse) {
+                packetDetail.forwarded = "local";
+                console.log("[ethernet] " + JSON.stringify(packetDetail));
                 this.#ethernet.receive(localResponse);
             } else {
-                this.#config.ethernetProvider?.send(destination, packet);
+                const provider = this.#config.ethernetProvider;
+                packetDetail.forwarded = provider ? "ws" : "dropped(no-provider)";
+                console.log("[ethernet] " + JSON.stringify(packetDetail));
+                provider?.send(destination, packet);
             }
+        } else if (e.data.type === "emulator_ethernet_read") {
+            console.log(`[ethernet-wasm] ${JSON.stringify({etherType: e.data.etherType, len: e.data.len})}`);
         } else if (e.data.type === "emulator_stats") {
             this.#delegate?.emulatorStatsDidChange?.(this, e.data.stats);
         } else if (e.data.type === "emulator_set_clipboard_text") {
