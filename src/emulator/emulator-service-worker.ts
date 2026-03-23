@@ -195,15 +195,21 @@ async function handleDiskCacheRequest(request: Request): Promise<Response> {
         console.error("Error opening cache:", e);
     }
 
+    // Honor browser cache bypass signals (e.g. shift-reload sends no-cache).
+    const skipCache =
+        request.cache === "no-cache" || request.cache === "reload";
+
     // Kick off (but don't wait for) a prefetch of the next chunk regardless
     // of whether this is a cache hit (if prefetching is working, we should
     // almost always end up with a cache hit, but we want to keep fetching
     // subsequent chunks).
     if (cache) {
         prefetchNextChunk(cache, request.url);
-        const match = await cache.match(request);
-        if (match) {
-            return match;
+        if (!skipCache) {
+            const match = await cache.match(request);
+            if (match) {
+                return match;
+            }
         }
     }
     const response = await fetch(request);
