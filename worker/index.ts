@@ -50,6 +50,55 @@ async function handleRequest(
         return disk.handleRequest(request, env.DISK_BUCKET, ctx);
     }
 
+    // Handle /proxy?url=<encoded> for the JS Virtual Gateway
+    if (path[0] === "proxy") {
+        const targetUrl = url.searchParams.get("url");
+        if (!targetUrl) {
+            return new Response("Missing url parameter", {status: 400});
+        }
+
+        // Handle CORS preflight
+        if (request.method === "OPTIONS") {
+            return new Response(null, {
+                status: 204,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                },
+            });
+        }
+
+        try {
+            const upstream = await fetch(targetUrl, {
+                headers: {
+                    "User-Agent": "Mozilla/2.02 (Macintosh; I; PPC)",
+                    Accept: "*/*",
+                },
+                redirect: "follow",
+            });
+
+            const responseHeaders = new Headers(upstream.headers);
+            responseHeaders.set("Access-Control-Allow-Origin", "*");
+            responseHeaders.set(
+                "Cross-Origin-Resource-Policy",
+                "cross-origin"
+            );
+            // Strip Content-Type charset params — Netscape 2.02 chokes on them
+            const ct = responseHeaders.get("Content-Type");
+            if (ct && ct.includes(";")) {
+                responseHeaders.set("Content-Type", ct.split(";")[0].trim());
+            }
+
+            return new Response(upstream.body, {
+                status: upstream.status,
+                headers: responseHeaders,
+            });
+        } catch (e) {
+            return new Response(`Proxy error: ${e}`, {status: 502});
+        }
+    }
+
     const legacyDomainRedirect = getLegacyDomainRedirect(url);
     if (legacyDomainRedirect) {
         return Response.redirect(
