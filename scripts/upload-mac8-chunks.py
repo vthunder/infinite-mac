@@ -42,7 +42,7 @@ def main():
             # Upload to R2
             r2_key = f"{R2_BUCKET}/{filename}"
             result = subprocess.run(
-                ["wrangler", "r2", "object", "put", r2_key, "--file", local_path],
+                ["wrangler", "r2", "object", "put", r2_key, "--file", local_path, "--remote"],
                 capture_output=True, text=True
             )
             if result.returncode == 0:
