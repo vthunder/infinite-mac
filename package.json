@@ -15,7 +15,8 @@
         "react-dom": "^18.2.0",
         "ringbuf.js": "^0.3.3",
         "typescript": "^5.8.3",
-        "use-debounce": "^10.0.3"
+        "use-debounce": "^10.0.3",
+        "virtual-gateway": "github:vthunder/virtual-gateway#main"
     },
     "devDependencies": {
         "@cloudflare/vite-plugin": "^1.7.5",

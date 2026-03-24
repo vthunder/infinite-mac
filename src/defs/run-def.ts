@@ -1,5 +1,6 @@
 import {BroadcastChannelEthernetProvider} from "@/net/BroadcastChannelEthernetProvider";
 import {CloudflareWorkerEthernetProvider} from "@/net/CloudflareWorkerEthernetProvider";
+import {JSVirtualGatewayProvider} from "virtual-gateway";
 import {fromDateString, toDateString} from "@/lib/dates";
 import {
     ALL_DISKS,
@@ -172,7 +173,10 @@ export function runDefFromUrl(urlString: string): RunDef | undefined {
     let ethernetProvider;
     const appleTalkZoneName = searchParams.get("appleTalk");
     const ethernetWsOverride = searchParams.get("ethernet_ws");
-    if (ethernetWsOverride) {
+    const ethernetGw = searchParams.get("ethernet_gw");
+    if (ethernetGw) {
+        ethernetProvider = new JSVirtualGatewayProvider(ethernetGw);
+    } else if (ethernetWsOverride) {
         ethernetProvider = new CloudflareWorkerEthernetProvider(
             "dev",
             ethernetWsOverride
