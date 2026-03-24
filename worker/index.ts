@@ -13,6 +13,8 @@ export type Env = {
     VARZ: KVNamespace;
     DISK_BUCKET: R2Bucket;
     ASSETS: Assets;
+    WEBONE_URL?: string;
+    WEBONE_TOKEN?: string;
 };
 const handler: ExportedHandler<Env> = {fetch: handleRequest};
 
@@ -70,13 +72,26 @@ async function handleRequest(
         }
 
         try {
-            const upstream = await fetch(targetUrl, {
-                headers: {
-                    "User-Agent": "Mozilla/2.02 (Macintosh; I; PPC)",
-                    Accept: "*/*",
-                },
-                redirect: "follow",
-            });
+            const weboneUrl =
+                env.WEBONE_URL || "https://proxy.sandmill.org";
+            const weboneToken = env.WEBONE_TOKEN;
+
+            const fetchHeaders: Record<string, string> = {
+                "User-Agent": "Mozilla/4.0 (compatible; MSIE 4.0; Windows 95)",
+                Accept: "*/*",
+            };
+            if (weboneToken) {
+                fetchHeaders["Authorization"] = `Bearer ${weboneToken}`;
+            }
+
+            // Use WebOne URL-in-path style: GET /http://target.com/
+            const upstream = await fetch(
+                weboneUrl + "/" + targetUrl,
+                {
+                    headers: fetchHeaders,
+                    redirect: "follow",
+                }
+            );
 
             const responseHeaders = new Headers(upstream.headers);
             responseHeaders.set("Access-Control-Allow-Origin", "*");
@@ -90,7 +105,8 @@ async function handleRequest(
                 responseHeaders.set("Content-Type", ct.split(";")[0].trim());
             }
 
-            return new Response(upstream.body, {
+            const body = upstream.body;
+            return new Response(body, {
                 status: upstream.status,
                 headers: responseHeaders,
             });
