@@ -72,6 +72,15 @@ async function handleRequest(
         }
 
         try {
+            // Redirect sandmill.org root → /retro (React SPA crashes Netscape)
+            let effectiveUrl = targetUrl;
+            if (
+                effectiveUrl === "http://sandmill.org/" ||
+                effectiveUrl === "https://sandmill.org/"
+            ) {
+                effectiveUrl = "http://sandmill.org/retro";
+            }
+
             const weboneUrl =
                 env.WEBONE_URL || "https://proxy.sandmill.org";
             const weboneToken = env.WEBONE_TOKEN;
@@ -86,7 +95,7 @@ async function handleRequest(
 
             // Use WebOne URL-in-path style: GET /http://target.com/
             const upstream = await fetch(
-                weboneUrl + "/" + targetUrl,
+                weboneUrl + "/" + effectiveUrl,
                 {
                     headers: fetchHeaders,
                     redirect: "follow",
