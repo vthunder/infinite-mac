@@ -174,8 +174,9 @@ export function runDefFromUrl(urlString: string): RunDef | undefined {
     const appleTalkZoneName = searchParams.get("appleTalk");
     const ethernetWsOverride = searchParams.get("ethernet_ws");
     const ethernetGw = searchParams.get("ethernet_gw");
+    const ethernetRelay = searchParams.get("ethernet_relay") ?? undefined;
     if (ethernetGw) {
-        ethernetProvider = new JSVirtualGatewayProvider(ethernetGw);
+        ethernetProvider = new JSVirtualGatewayProvider(ethernetGw, ethernetRelay);
     } else if (ethernetWsOverride) {
         ethernetProvider = new CloudflareWorkerEthernetProvider(
             "dev",
