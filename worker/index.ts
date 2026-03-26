@@ -108,13 +108,28 @@ async function handleRequest(
                 "Cross-Origin-Resource-Policy",
                 "cross-origin"
             );
+            // Drop security policy headers — these come from sandmill.org upstream
+            // and would confuse Netscape or interfere with the JS gateway's fetch() context.
+            responseHeaders.delete("Cross-Origin-Embedder-Policy");
+            responseHeaders.delete("Cross-Origin-Opener-Policy");
+            responseHeaders.delete("Content-Security-Policy");
             // Strip Content-Type charset params — Netscape 2.02 chokes on them
             const ct = responseHeaders.get("Content-Type");
             if (ct && ct.includes(";")) {
                 responseHeaders.set("Content-Type", ct.split(";")[0].trim());
             }
 
-            const body = upstream.body;
+            // For HTML responses, strip <script> tags — Cloudflare may inject
+            // email-protection or analytics scripts that crash Netscape.
+            // WebOne's regex stripping is the primary defence; this is a backup.
+            const contentType = responseHeaders.get("Content-Type") ?? "";
+            let body: BodyInit | null = upstream.body;
+            if (contentType.startsWith("text/html")) {
+                body = new HTMLRewriter()
+                    .on("script", {element(el) { el.remove(); }})
+                    .transform(new Response(upstream.body)).body;
+            }
+
             return new Response(body, {
                 status: upstream.status,
                 headers: responseHeaders,
